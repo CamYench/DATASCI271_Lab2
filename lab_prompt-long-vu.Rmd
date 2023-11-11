@@ -79,7 +79,13 @@ Conduct a comprehensive Exploratory Data Analysis on the `co2` series. This shou
 
 What you report in the deliverable should not be your own process of discovery, but rather a guided discussion that you have constructed so that your audience can come to an understanding as succinctly and successfully as possible. This means that figures should be thoughtfully constructed and what you learn from them should be discussed in text; to the extent that there is _any_ raw output from your analysis, you should intend for people to read and interpret it, and you should write your own interpretation as well. 
 
-```{r EDA1}
+Understanding a changing climate, and what it means for the earth's inhabitants is of growing interest to the scientific and policy community. Although, at this point in 1997 it is not entirely clear what the consequences of this growing awareness will be, in this report we present likely outcomes under "business-as-usual" scenarios. In doing so, our hope, is to establish a series of possible futures, and, as evidence, technology, and policy develop over the coming decades, that we can weigh the impacts that carbon-emission reduction efforts might take. 
+
+# Background 
+## Carbon Emissions 
+What are are carbon emissions, and why should anyone care about them? In this section, we briefly review what is known about the relationship between the burning of fossil fuels, atmospheric $CO_{2}$, and the scientific community's growing understanding of the linkage between atmospheric $CO_{2}$ and global average temperatures. 
+
+```{r EDA1, echo = FALSE}
 co2.mthly <- co2
 
 df <- as_tsibble(co2.mthly)
@@ -91,24 +97,24 @@ df <- df %>% mutate(
 df_add <- df %>% model(stl = STL(value))
 df_mult <- df %>% model(stl = STL(log_value)) 
 
-p1 <- components(df_add) %>% 
+p1a1 <- components(df_add) %>% 
   as_tsibble() %>% 
   autoplot(value, colour = "gray") + geom_line(aes(y = trend), color = "#D55E00") + 
   labs(y = "CO2 Part per Million", x = "Time", title = "Monthly CO2 Mole Fraction at Mauna Loa")
 
-p2 <- components(df_mult) %>% 
+p1a2 <- components(df_mult) %>% 
     as_tsibble() %>% 
   autoplot(log_value, colour = "gray") + geom_line(aes(y = trend), color = "#D55E00") + 
   labs(y = "CO2 Part per Million", x = "Time", title = "Log of Monthly CO2 Mole Fraction at Mauna Loa")
 
-grid.arrange(p1, p2, nrow = 1, ncol = 2)
+grid.arrange(p1a1, p1a2, nrow = 1, ncol = 2)
 
-p3 <- df_add %>% components() %>% autoplot() 
-p4 <- df_add %>% components() %>% ACF(remainder) %>% autoplot() + labs(titles = "Residuals of additive composition") 
-p5 <- df_mult %>% components() %>% autoplot() 
-p6 <- df_mult %>% components() %>% ACF(remainder) %>% autoplot() + labs(title = "Residuals of multiplicative composition")
+p1a3 <- df_add %>% components() %>% autoplot() 
+p1a4 <- df_add %>% components() %>% ACF(remainder) %>% autoplot() + labs(titles = "Residuals of additive composition") 
+p1a5 <- df_mult %>% components() %>% autoplot() 
+p1a6 <- df_mult %>% components() %>% ACF(remainder) %>% autoplot() + labs(title = "Residuals of multiplicative composition")
 
-grid.arrange(p3, p4, p5, p6, nrow = 2, ncol = 2) 
+grid.arrange(p1a3, p1a4, p1a5, p1a6, nrow = 2, ncol = 2) 
 
 df_add %>% components() %>% gg_subseries(season_year) + labs(x = "Month of Year" , y = "Seasonal CO2 Changes", title = "Seasonal Component of the CO2 measurements at Mauna Loa") 
 ```
@@ -123,13 +129,19 @@ Using the additive decomposition plot shown in the second plot, the team determi
 The third plot shows that CO2 level increases from January to May, then decreases gradually until October before increasing again. This is likely due to the change in humidity of the air at the location of the observatory and other factors. 
  
 
-```{r EDA2}
+```{r EDA2, echo = FALSE}
 
 df %>% gg_tsdisplay(value, plot_type = 'partial')
 
 df %>% gg_tsdisplay(difference(value), plot_type = 'partial')
 
 df %>% gg_tsdisplay(difference(difference(value),12), plot_type = 'partial')
+
+df %>% gg_tsdisplay(log(value), plot_type = 'partial')
+
+df %>% gg_tsdisplay(difference(log(value)), plot_type = 'partial')
+
+df %>% gg_tsdisplay(difference(difference(log(value)),12), plot_type = 'partial')
 
 ```
 
@@ -162,20 +174,20 @@ mul.quad.sea %>% report()
 ```
 The team fit the data using four modeling combination: linear trend only, linear with quadratic trend, linear trend with seasonal, and linear trend with quadratic trend and seasonal. For each modeling combination, the team used both decomposition methods to fit the data. The team selected the model with the lowest corrected Akaike information criterion (AICc). Based on the information presented in the above tables, the model using multiplicative decomposition methodology and including the linear trend, quadratic trend and seasonal terms is the best model out of the eight models that we generated. The summary of the model shows that all terms included in the model were statistically different from 0. The adjusted R square of the model is 0.9976, which indicated that more than 99% of the response variance was explained in this model. 
 
-```{r residual analysis linear model, warning = FALSE}
+```{r residual analysis linear model, warning = FALSE, echo = FALSE}
 mul.quad.sea %>% gg_tsresiduals()
 
-p7 <- augment(mul.quad.sea) %>% 
+p2a1 <- augment(mul.quad.sea) %>% 
   ggplot(aes(x = .fitted, y = .innov)) + 
   geom_point() + 
   geom_smooth(se = FALSE) + 
   scale_x_log10()
 
-p8 <- augment(mul.quad.sea) %>% mutate(
+p2a2 <- augment(mul.quad.sea) %>% mutate(
   month = month(index, label = TRUE)
 ) %>% ggplot(aes(x = month, y = .innov)) + geom_boxplot()
 
-grid.arrange(p7, p8, nrow = 1, ncol = 2)
+grid.arrange(p2a1, p2a2, nrow = 1, ncol = 2)
 
 
 augment(mul.quad.sea) %>% features(.innov, ljung_box, dof = 2, lag = 200)
@@ -184,7 +196,7 @@ augment(mul.quad.sea) %>% features(.innov, ljung_box, dof = 2, lag = 200)
 
 The team also conducted a residual analysis on the selected linear model. The residual ACF plot shows that the residuals do not follow a white noise signal and is not even a stationary timeseries. The residual against fitted value plot also shows that there is a relationship between the model residuals and the fitted value, which indicating that there are confounding variables. Moreover, the ljung-box test (p-value less than 0.05) also shows that the residuals of the model exhibits a serial correlation. 
 
-```{r forecast, warning =FALSE}
+```{r forecast, warning =FALSE, echo = FALSE}
 future.df <- new_data(df, n = 276)
 
 fx2020 <- mul.quad.sea %>% forecast(new_data = future.df)
@@ -206,7 +218,7 @@ The team used the selected model (using multiplicative decomposition method with
 
 Following all appropriate steps, choose an ARIMA model to fit to the series. Discuss the characteristics of your model and how you selected between alternative ARIMA specifications. Use your model (or models) to generate forecasts to the year 2022. 
 
-```{r unit root, warning = FALSE} 
+```{r unit root, warning = FALSE, echo = FALSE} 
 df %>% features(value, unitroot_ndiffs)
 df %>% features(value, unitroot_nsdiffs)
 df %>% features(difference(difference(value),12), unitroot_kpss)
@@ -218,14 +230,14 @@ The KPSS test of the CO2 timeseries after applying the differences (at lag 1 and
 
 ```{r ARIMA model, warning = FALSE}
 ari.fit <- df %>% 
-  model(ARIMA111111 = ARIMA(value ~ pdq(1,1,1) + PDQ(1,1,1)),
-        ARIMA111211 = ARIMA(value ~ pdq(1,1,1) + PDQ(2,1,1)),
-        ARIMA211211 = ARIMA(value ~ pdq(2,1,1) + PDQ(2,1,1)),
-        ARIMA112112 = ARIMA(value ~ pdq(1,1,2) + PDQ(1,1,2)), 
-        ARIMA112111 = ARIMA(value ~ pdq(1,1,2) + PDQ(1,1,1)),
-        ARIMA111112 = ARIMA(value ~ pdq(1,1,1) + PDQ(1,1,2)),
-        ARIMA013011 = ARIMA(value ~ pdq(0,1,3) + PDQ(0,1,1)),
-        auto = ARIMA(value, stepwise = FALSE, approx = FALSE)
+  model(ARIMA111111 = ARIMA(log(value) ~ pdq(1,1,1) + PDQ(1,1,1)),
+        ARIMA111211 = ARIMA(log(value)  ~ pdq(1,1,1) + PDQ(2,1,1)),
+        ARIMA211211 = ARIMA(log(value)  ~ pdq(2,1,1) + PDQ(2,1,1)),
+        ARIMA112112 = ARIMA(log(value)  ~ pdq(1,1,2) + PDQ(1,1,2)), 
+        ARIMA112111 = ARIMA(log(value)  ~ pdq(1,1,2) + PDQ(1,1,1)),
+        ARIMA111112 = ARIMA(log(value)  ~ pdq(1,1,1) + PDQ(1,1,2)),
+        ARIMA013011 = ARIMA(log(value)  ~ pdq(0,1,3) + PDQ(0,1,1)),
+        auto = ARIMA(log(value), stepwise = FALSE, approx = FALSE)
         )
 
 ari.fit %>% pivot_longer(everything(), names_to = "Model name", values_to = "Orders")
@@ -235,7 +247,7 @@ glance(ari.fit) |> arrange(AICc) |> select(.model:AICc)
 
 Based on the results of testing out different model combination, the SARIMA model with one seasonal and one non-seasonal differencing, three non-seasonal autoregressive terms and one seasonal autoregressive term seems to be model with the best performance (lowest AICc). 
 
-```{r residual analysis arima, warning = FALSE}
+```{r residual analysis arima, warning = FALSE, echo = FALSE}
 ari.fit %>% select(ARIMA013011) %>% gg_tsresiduals(lag = 36)
 augment(ari.fit) %>%
   features(.innov, ljung_box, lag=200, dof=4)
@@ -243,7 +255,7 @@ augment(ari.fit) %>%
 ```
 The residual analysis of the selected model shows that the residuals timeseries is much closer to a white noise signal compared to that of the linear model. The ACF residual plot shows that lag 9 and lag 34 are significant, but these significant lags could be due by chance. The ljung-box test result shows that all selected models have p-value greater than 0.05, which suggests that the residuals of the selected model is stationary. 
 
-```{r forecast arima, warning= FALSE}
+```{r forecast arima, warning= FALSE, echo = FALSE}
 ari.fit %>% forecast(h = 300) %>% filter(.model == 'ARIMA013011') %>% autoplot(df)
 
 ari.fit %>% forecast(h = 300) %>% filter(.model == 'ARIMA013011') %>% hilo(90) %>% tail
@@ -255,7 +267,7 @@ The team used the selected model to generate CO2 level in the atmosphere to Dece
 
 Generate predictions for when atmospheric CO2 is expected to be at [420 ppm](https://research.noaa.gov/article/ArtMID/587/ArticleID/2764/Coronavirus-response-barely-slows-rising-carbon-dioxide) and 500 ppm levels for the first and final times (consider prediction intervals as well as point estimates in your answer). Generate a prediction for atmospheric CO2 levels in the year 2100. How confident are you that these will be accurate predictions?
 
-```{r generate hilo and 2100 forecast}
+```{r generate hilo and 2100 forecast, echo = FALSE}
 future.df.2100 <- new_data(df, n = 1236)
 fx2100 <- mul.quad.sea %>% forecast(new_data = future.df.2100)
 fx2100 <- fx2100 %>% mutate(
@@ -319,6 +331,8 @@ One of the very interesting features of Keeling and colleagues' research is that
 
 In this introduction, you can assume that your reader will have **just** read your 1997 report. In this introduction, **very** briefly pose the question that you are evaluating, and describe what (if anything) has changed in the data generating process between 1997 and the present. 
 
+The 1997 CO2 forecast provided CO2 level forecast to 2100. Reasonably, the further the forecast horizon is, the more uncertain the forecast becomes. In the following sections, the team decided to evaluate and update our forecast conducted in 1997 with more recent data. In the process of this work, we also attempted to identify any systematic changes in the way CO2 level grows at Mauna Loa. 
+
 ## (3 points) Task 1b: Create a modern data pipeline for Mona Loa CO2 data.
 
 The most current data is provided by the United States' National Oceanic and Atmospheric Administration, on a data page [[here](https://gml.noaa.gov/ccgg/trends/data.html)]. Gather the most recent weekly data from this page. (A group that is interested in even more data management might choose to work with the [hourly data](https://gml.noaa.gov/aftp/data/trace_gases/co2/in-situ/surface/mlo/co2_mlo_surface-insitu_1_ccgg_HourlyData.txt).) 
@@ -327,11 +341,97 @@ Create a data pipeline that starts by reading from the appropriate URL, and ends
 
 Conduct the same EDA on this data. Describe how the Keeling Curve evolved from 1997 to the present, noting where the series seems to be following similar trends to the series that you "evaluated in 1997" and where the series seems to be following different trends. This EDA can use the same, or very similar tools and views as you provided in your 1997 report. 
 
+```{r present data pipeline and processing, echo = FALSE}
+url <- "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_weekly_mlo.csv" 
+co2_present <- read_csv(url, skip = 35)
+co2_present <- co2_present %>% select(year, month, day, average)
+
+# Processing data
+co2_present <- co2_present %>% mutate(
+  time_index = lubridate::make_date(year, month, day),
+  value = case_when(average < 0 ~  NA, 
+                      average >= 0 ~ average)
+) %>% fill(value, .direction = "up") %>% as_tsibble(index = time_index) %>%
+  mutate(
+    value = round(value, 2),
+    log_value = log(value)
+  ) %>% select(value, log_value)
+
+
+co2_present.add <- co2_present %>% model(stl = STL(value))
+co2_present.mult <- co2_present %>% model(stl = STL(log_value)) 
+
+p1b1 <- components(co2_present.add) %>% 
+  as_tsibble() %>% 
+  autoplot(value, colour = "gray") + geom_line(aes(y = trend), color = "#D55E00") + 
+  labs(y = "CO2 Part per Million", x = "Time", title = "Weekly CO2 Mole Fraction at Mauna Loa")
+
+p1b2 <- components(co2_present.mult) %>% 
+    as_tsibble() %>% 
+  autoplot(log_value, colour = "gray") + geom_line(aes(y = trend), color = "#D55E00") + 
+  labs(y = "CO2 Part per Million", x = "Time", title = "Log of Weekly CO2 Mole Fraction at Mauna Loa")
+
+grid.arrange(p1b1, p1b2, nrow = 1, ncol = 2)
+```
+The team conducted the evaluation using a similar approach that we did for the 1997 CO2 dataset. We performed explanatory data analysis on the updated CO2 dataset. Different from the 1997 study, we worked with the weekly CO2 data in the current study. We processed to remove faulty values within the dataset (negative values or suspicious outliers). The plot above presents the weekly CO2 level at Mauna Loa from May 1974 to October 2023. The graph on the left presents the CO2 level and the graph on the right presents the logarithmic version of the CO2 level. The plot shows a more obvious non-linear trend than the 1997 study, which indicates that the multiplicative decomposition method is a more appropriate method. 
+
+```{r EDA present, echo = FALSE}
+p1b3 <- co2_present.add %>% components() %>% autoplot() 
+p1b4 <- co2_present.add %>% components() %>% ACF(remainder) %>% autoplot() + labs(titles = "Residuals of additive composition") 
+p1b5 <- co2_present.mult %>% components() %>% autoplot() 
+p1b6 <- co2_present.mult %>% components() %>% ACF(remainder) %>% autoplot() + labs(titles = "Residuals of multiplicative composition")
+
+grid.arrange(p1b3, p1b4, p1b5, p1b6, nrow = 2, ncol = 2) 
+
+```
+The above plot shows the actual decomposition using the additive and multiplicative method along with the ACF plots of the residuals (after the trend and the seasonal component were removed from the series). The ACF plots show that, at the weekly granularity, the residuals timeseries does not seem to be stationary, suggesting that further differencing transformation may be needed. 
+
+```{r co2 present transformation, echo  = FALSE, warning = FALSE} 
+co2_present %>% gg_tsdisplay(log(value), plot_type = 'partial',lag = 104)
+co2_present %>% gg_tsdisplay(difference(log(value)), plot_type = 'partial',lag = 104)
+co2_present %>% gg_tsdisplay(difference(difference(log(value)), 52), plot_type = 'partial',lag = 104)
+```
+The team performed a series of differencing transformation on the updated dataset. Similarly to the analysis included in the 1997 study, we generated a CO2 timeseries with the differencing at the subsequent lag and every 52 lags to remove the trend and the seasonality component from the data. The above plots show the timeseries with differencing transformation and their associated ACF and PACF plots. The third plot, which shows the timeseries after the trend and seasonal differencing, indicates that there is no trend or seasonality within the series and suggests an ARIMA model with both seasonal and non-seasonal moving average and autoregressive terms may be a good candidate to model the updated dataset. 
+
+
 ## (1 point) Task 2b: Compare linear model forecasts against realized CO2
 
 Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from a linear time model in 1997 (i.e. "Task 2a"). (You do not need to run any formal tests for this task.) 
 
+```{r linear model 1997 vs observed, echo = FALSE, warning= FALSE}
+co2_present.m1 <- co2_present %>% as_tibble() %>%
+  mutate(
+  index = yearmonth(time_index) 
+) %>% group_by(index) %>% summarise(
+ value = mean(value),
+ log_value = mean(exp(log_value))
+) %>% as_tsibble(index = index) %>% 
+  filter(as.Date(index) >= as.Date("2000-01-01") & as.Date(index) < as.Date("2020-12-31"))
+
+
+fx2020 %>% filter((as.Date(index) > as.Date("2000-01-01")) & (as.Date(index) < as.Date("2020-12-31"))) %>% autoplot(co2_present.m1) + 
+  labs(x = "Time", y = "CO2 Level at Mauna Loa", title = "Comparison between 1997 Forecast (Linear Model) with Observed Values") 
+```
+To compare the forecast from our 1997 linear model to the observed CO2 level, we aggregated the weekly actual CO2 data to monthly data so that the dataset has the same time index as the forecast values. Based on the comparison in the above plot (black line shows the observed CO2 level and blue line shows the forecast CO2 level), the 1997 linear model overforecast the CO2 level at Mauna Loa from 2000 to 2020. 
+
+
 ## (1 point) Task 3b: Compare ARIMA models forecasts against realized CO2  
+
+```{r ARIMA model 1997 vs observed, echo = FALSE, warning= FALSE}
+co2_present.m2 <- co2_present %>% as_tibble() %>%
+  mutate(
+  index = yearmonth(time_index) 
+) %>% group_by(index) %>% summarise(
+ value = mean(value),
+ log_value = mean(exp(log_value))
+) %>% as_tsibble(index = index) %>% 
+  filter(as.Date(index) >= as.Date("2000-01-01") & as.Date(index) < as.Date("2022-12-31"))
+
+ari.fit %>% forecast(h = 300) %>% filter(.model == 'ARIMA013011') %>% autoplot(co2_present.m2) + 
+    labs(x = "Time", y = "CO2 Level at Mauna Loa", title = "Comparison between 1997 Forecast (ARIMA Model) with Observed Values") 
+
+```
+The plot above shows the comparison between observed CO2 level and the forecast from the 1997 ARIMA model. The observed CO2 levels are closer to the upper bound of the 95% CI of the forecast. The forecast from 1997 ARIMA model shows that the expected forecast is lower than the observed CO2 values at a more significant degree than that of the linear model. However, the observed CO2 seems to be closer to the upper bound of the 95% CI of the ARIMA model. 
 
 Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from the ARIMA model that you fitted in 1997 (i.e. "Task 3a"). Describe how the Keeling Curve evolved from 1997 to the present. 
 
@@ -341,9 +441,105 @@ In 1997 you made predictions about the first time that CO2 would cross 420 ppm. 
 
 After reflecting on your performance on this threshold-prediction task, continue to use the weekly data to generate a month-average series from 1997 to the present, and compare the overall forecasting performance of your models from Parts 2a and 3b over the entire period. (You should conduct formal tests for this task.) 
 
+```{r Performance evaluation - reach 420ppm, echo = FALSE, warning= FALSE} 
+obs1st420 <- co2_present %>% filter(value >= 420) %>% filter(row_number() ==1) %>% select(time_index) 
+```
+The observed CO2 values indicate that the CO2 level reached 420 ppm the first time in `r obs1st420`. This is earlier than the prediction from the linear model and later than the prediction from the ARIMA model. The linear model (with a tight CI band) predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.lm` and the ARIMA model predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.ari`. Based on their prediction, the ARIMA model provided a better expectation than the linear model. 
+
+```{r model evaluation, echo = FALSE, warning = FALSE}
+co2_present.m3 <- co2_present %>% as_tibble() %>%
+  mutate(
+  index = yearmonth(time_index) 
+) %>% group_by(index) %>% summarise(
+ value = mean(value),
+ log_value = mean(exp(log_value))
+) %>% as_tsibble(index = index) 
+
+bind_rows(
+  ari.fit %>% select(ARIMA013011) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3),
+  ari.fit %>% select(ARIMA211211) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3),
+  ari.fit %>% select(ARIMA111211) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3), 
+  ari.fit %>% select(ARIMA111111) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3),
+  ari.fit %>% select(ARIMA112111) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3),
+  fx2020 %>% fabletools::accuracy(co2_present.m3)
+)
+```
+The team calculated the performance metrics in order to evaluate the performance of the models that we developed in 1997. The performance metrics include but are not limited to root mean square error , mean absolute error and mean absolute percentage error. Based on the results of the metrics table, the linear model with trend (linear and quadratic terms) and seasonal terms was the best model with the lowest score in all metrics. 
+
 ## (4 points) Task 5b: Train best models on present data
 
 Seasonally adjust the weekly NOAA data, and split both seasonally-adjusted (SA) and non-seasonally-adjusted (NSA) series into training and test sets, using the last two years of observations as the test sets. For both SA and NSA series, fit ARIMA models using all appropriate steps. Measure and discuss how your models perform in-sample and (psuedo-) out-of-sample, comparing candidate models and explaining your choice. In addition, fit a polynomial time-trend model to the seasonally-adjusted series and compare its performance to that of your ARIMA model.
+
+```{r generate training and testing data, echo = FALSE, warning = FALSE}
+co2_present.m4 <- co2_present %>% as_tibble() %>%
+  mutate(
+  index = yearmonth(time_index) 
+) %>% group_by(index) %>% summarise(
+ value = mean(value),
+ log_value = mean(log_value)
+) %>% as_tsibble(index = index) 
+co2.log.tr <- co2_present.m4 %>% model(stl = STL(log_value)) %>% components() %>% slice(1:(n()-24)) %>% as_tsibble(index = index) 
+co2.log.sa.tr <- co2.log.tr %>% select(season_adjust)
+co2.log.nsa.tr <- co2.log.tr %>% select(log_value)
+co2.log.te <- co2_present.m4 %>% model(stl = STL(log_value)) %>% components() %>% slice((n()-24):n()) %>% as_tsibble(index = index)
+co2.log.sa.te <- co2.log.te %>% select(season_adjust)
+co2.log.nsa.te <- co2.log.te %>% select(log_value)
+
+# Seasonally adjusted models 
+ari.fit2 <- co2.log.sa.tr %>% 
+  model(ARIMA111101 = ARIMA(season_adjust ~ pdq(1,1,1) + PDQ(1,0,1)),
+        ARIMA111201 = ARIMA(season_adjust  ~ pdq(1,1,1) + PDQ(2,0,1)),
+        ARIMA211201 = ARIMA(season_adjust  ~ pdq(2,1,1) + PDQ(2,0,1)),
+        ARIMA112102 = ARIMA(season_adjust  ~ pdq(1,1,2) + PDQ(1,0,2)), 
+        ARIMA112101 = ARIMA(season_adjust ~ pdq(1,1,2) + PDQ(1,0,1)),
+        ARIMA111102 = ARIMA(season_adjust  ~ pdq(1,1,1) + PDQ(1,0,2)),
+        ARIMA013001 = ARIMA(season_adjust ~ pdq(0,1,3) + PDQ(0,0,1)),
+        auto = ARIMA(season_adjust, stepwise = FALSE, approx = FALSE)
+        )
+
+ari.fit2 %>% pivot_longer(everything(), names_to = "Model name", values_to = "Orders")
+
+glance(ari.fit2) |> arrange(AICc) |> select(.model:AICc)
+
+mul.quad.sea2 <- co2.log.sa.tr %>% 
+  model(trend_model = TSLM(season_adjust ~ trend() + I(trend()^2)))
+mul.quad.sea2 %>% report()
+
+future.df2 <- new_data(co2.log.sa.tr, n = 24)
+lm.fx.te <- mul.quad.sea2 %>% forecast(new_data = future.df2)
+
+
+bind_rows(
+  ari.fit2 %>% select(ARIMA111201) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
+  ari.fit2 %>% select(ARIMA211201) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
+  ari.fit2 %>% select(ARIMA111102) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te), 
+  ari.fit2 %>% select(ARIMA111101) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
+  ari.fit2 %>% select(ARIMA013001) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
+  lm.fx.te %>% fabletools::accuracy(co2.log.sa.te)
+  
+)
+
+
+# Non-seasonally adjusted models 
+
+ari.fit3 <- co2.log.nsa.tr %>% 
+  model(ARIMA111101 = ARIMA(log_value ~ pdq(1,1,1) + PDQ(1,1,1)),
+        ARIMA111201 = ARIMA(log_value  ~ pdq(1,1,1) + PDQ(2,1,1)),
+        ARIMA211201 = ARIMA(log_value  ~ pdq(2,1,1) + PDQ(2,1,1)),
+        ARIMA112102 = ARIMA(log_value  ~ pdq(1,1,2) + PDQ(1,1,2)), 
+        ARIMA112101 = ARIMA(log_value ~ pdq(1,1,2) + PDQ(1,1,1)),
+        ARIMA111102 = ARIMA(log_value  ~ pdq(1,1,1) + PDQ(1,1,2)),
+        ARIMA013001 = ARIMA(log_value ~ pdq(0,1,3) + PDQ(0,1,1)),
+        auto = ARIMA(log_value, stepwise = FALSE, approx = FALSE)
+        )
+
+ari.fit3 %>% pivot_longer(everything(), names_to = "Model name", values_to = "Orders")
+
+glance(ari.fit3) |> arrange(AICc) |> select(.model:AICc)
+
+
+```
+
 
 ## (3 points) Task Part 6b: How bad could it get?
 
