@@ -129,7 +129,7 @@ Using the additive decomposition plot shown in the second plot, the team determi
 The third plot shows that CO2 level increases from January to May, then decreases gradually until October before increasing again. This is likely due to the change in humidity of the air at the location of the observatory and other factors. 
  
 
-```{r EDA2, echo = FALSE}
+```{r EDA2, echo = FALSE, warning = FALSE}
 
 df %>% gg_tsdisplay(value, plot_type = 'partial')
 
@@ -146,6 +146,8 @@ df %>% gg_tsdisplay(difference(difference(log(value)),12), plot_type = 'partial'
 ```
 
 The team performed a series of transformation steps to remove the trend and seasonality component from the CO2 timeseries data. The first plot shows the ACF and PACF plots of the raw data. The ACF portion of this plot also shows the trend component of the dataset. The team took a difference of the CO2 measurements in order to remove the trend component. The second plot shows the ACF and PACF portion of the first order differencing of the CO2 measurements. The ACF plot of this first order differencing shows that there is a seasonality component at every 12 lags, which suggesting an annual seasonality within the data. To remove the seasonality component, the team performed a differencing transformation at every 12 lags of the dataset. The third plot shows that the dataset after the transformation is relatively random. The ACF portion of this third plot shows that the moving average term at lag 1 and lag 12 is significant (so are lag 11 and 9 but the level of significance is lower compared to the moving average term at lag 1 and 12), this suggests that we can use a ma1 and seasonal ma1 model to fit the data. The PACF portion shows that the autoregressive terms at lag 1 and every 12 lags are significant, this suggests that we can use a ar1 and seasonal ar1 model to fit the data. 
+
+We also performed the same transformation on the logarithm version of CO2 level. We reached to a similar conclusion based on the results of plot four to six. 
 
 ## (3 points) Task 2a: Linear time trend model
 
@@ -219,12 +221,12 @@ The team used the selected model (using multiplicative decomposition method with
 Following all appropriate steps, choose an ARIMA model to fit to the series. Discuss the characteristics of your model and how you selected between alternative ARIMA specifications. Use your model (or models) to generate forecasts to the year 2022. 
 
 ```{r unit root, warning = FALSE, echo = FALSE} 
-df %>% features(value, unitroot_ndiffs)
-df %>% features(value, unitroot_nsdiffs)
-df %>% features(difference(difference(value),12), unitroot_kpss)
+df %>% features(log(value), unitroot_ndiffs)
+df %>% features(log(value), unitroot_nsdiffs)
+df %>% features(difference(difference(log(value)),12), unitroot_kpss)
 ```
 
-The team used unit root test to determine the number of differences (both seasonal and non-seasonal) to make the CO2 timeseries stationary. The unit root test results show that it requires one seasonal and one non-seasonal difference to make the timeseries stationary. This result agreed with our findings in the explanatory data analysis section. 
+Because the best linear model that we developed used the multiplicative decomposition method (using logarithm of the CO2 level as the response variable). The team used the same log transformation to develop the ARIMA model. We utilized the unit root test to determine the number of differences (both seasonal and non-seasonal) to make the CO2 timeseries stationary. The unit root test results show that it requires one seasonal and one non-seasonal difference to make the timeseries stationary. This result agreed with our findings in the explanatory data analysis section. 
 
 The KPSS test of the CO2 timeseries after applying the differences (at lag 1 and lag 12) shows a p-value of 0.1, which is greater than 0.05. The p-value of the KPSS test suggests that the timeseries after applying the differences is stationary. 
 
@@ -245,7 +247,7 @@ ari.fit %>% pivot_longer(everything(), names_to = "Model name", values_to = "Ord
 glance(ari.fit) |> arrange(AICc) |> select(.model:AICc)
 ```
 
-Based on the results of testing out different model combination, the SARIMA model with one seasonal and one non-seasonal differencing, three non-seasonal autoregressive terms and one seasonal autoregressive term seems to be model with the best performance (lowest AICc). 
+Based on the results of testing out different model combination, the SARIMA model with one seasonal and one non-seasonal differencing, three non-seasonal moving average terms and one seasonal moving average term seems to be model with the best performance (lowest AICc). 
 
 ```{r residual analysis arima, warning = FALSE, echo = FALSE}
 ari.fit %>% select(ARIMA013011) %>% gg_tsresiduals(lag = 36)
@@ -391,7 +393,7 @@ co2_present %>% gg_tsdisplay(log(value), plot_type = 'partial',lag = 104)
 co2_present %>% gg_tsdisplay(difference(log(value)), plot_type = 'partial',lag = 104)
 co2_present %>% gg_tsdisplay(difference(difference(log(value)), 52), plot_type = 'partial',lag = 104)
 ```
-The team performed a series of differencing transformation on the updated dataset. Similarly to the analysis included in the 1997 study, we generated a CO2 timeseries with the differencing at the subsequent lag and every 52 lags to remove the trend and the seasonality component from the data. The above plots show the timeseries with differencing transformation and their associated ACF and PACF plots. The third plot, which shows the timeseries after the trend and seasonal differencing, indicates that there is no trend or seasonality within the series and suggests an ARIMA model with both seasonal and non-seasonal moving average and autoregressive terms may be a good candidate to model the updated dataset. 
+The team performed a series of differencing transformation on the updated dataset. Similarly to the analysis included in the 1997 study, we generated a CO2 timeseries with the differencing at the subsequent lag and every 52 lags to remove the trend and the seasonality component from the data. The above plots show the timeseries with differencing transformation and their associated ACF and PACF plots. The third plot, which shows the timeseries after the trend and seasonal differencing, indicates that there is no trend or seasonality within the series. 
 
 
 ## (1 point) Task 2b: Compare linear model forecasts against realized CO2
@@ -431,7 +433,7 @@ ari.fit %>% forecast(h = 300) %>% filter(.model == 'ARIMA013011') %>% autoplot(c
     labs(x = "Time", y = "CO2 Level at Mauna Loa", title = "Comparison between 1997 Forecast (ARIMA Model) with Observed Values") 
 
 ```
-The plot above shows the comparison between observed CO2 level and the forecast from the 1997 ARIMA model. The observed CO2 levels are closer to the upper bound of the 95% CI of the forecast. The forecast from 1997 ARIMA model shows that the expected forecast is lower than the observed CO2 values at a more significant degree than that of the linear model. However, the observed CO2 seems to be closer to the upper bound of the 95% CI of the ARIMA model. 
+The plot above shows the comparison between observed CO2 level and the forecast from the 1997 ARIMA model. The observed CO2 levels are closer to the upper bound of the 80% CI of the forecast. The forecast from 1997 ARIMA model shows that the expected forecast is lower than the observed CO2 values at a more significant degree than that of the linear model. However, the observed CO2 seems to be closer to the upper bound of the 80% CI of the ARIMA model. 
 
 Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from the ARIMA model that you fitted in 1997 (i.e. "Task 3a"). Describe how the Keeling Curve evolved from 1997 to the present. 
 
@@ -444,7 +446,7 @@ After reflecting on your performance on this threshold-prediction task, continue
 ```{r Performance evaluation - reach 420ppm, echo = FALSE, warning= FALSE} 
 obs1st420 <- co2_present %>% filter(value >= 420) %>% filter(row_number() ==1) %>% select(time_index) 
 ```
-The observed CO2 values indicate that the CO2 level reached 420 ppm the first time in `r obs1st420`. This is earlier than the prediction from the linear model and later than the prediction from the ARIMA model. The linear model (with a tight CI band) predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.lm` and the ARIMA model predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.ari`. Based on their prediction, the ARIMA model provided a better expectation than the linear model. 
+The observed CO2 values indicate that the CO2 level reached 420 ppm the first time in `r obs1st420`. This is earlier than the prediction from the linear model and later than the prediction from the ARIMA model. The linear model (with a tight CI band) predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.lm` and the ARIMA model predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.ari`. The linear model predicted that the CO2 level is expected to reach 420 in `r fx2100.avg420.lm1` and the ARIMA model predicted that the CO2 level is expected to reach 420 in `r fx2100.avg420.ari1`. The linear model provided a closer prediction to the actual date than the ARIMA model. 
 
 ```{r model evaluation, echo = FALSE, warning = FALSE}
 co2_present.m3 <- co2_present %>% as_tibble() %>%
@@ -484,46 +486,25 @@ co2.log.nsa.tr <- co2.log.tr %>% select(log_value)
 co2.log.te <- co2_present.m4 %>% model(stl = STL(log_value)) %>% components() %>% slice((n()-24):n()) %>% as_tsibble(index = index)
 co2.log.sa.te <- co2.log.te %>% select(season_adjust)
 co2.log.nsa.te <- co2.log.te %>% select(log_value)
+```
 
-# Seasonally adjusted models 
-ari.fit2 <- co2.log.sa.tr %>% 
-  model(ARIMA111101 = ARIMA(season_adjust ~ pdq(1,1,1) + PDQ(1,0,1)),
-        ARIMA111201 = ARIMA(season_adjust  ~ pdq(1,1,1) + PDQ(2,0,1)),
-        ARIMA211201 = ARIMA(season_adjust  ~ pdq(2,1,1) + PDQ(2,0,1)),
-        ARIMA112102 = ARIMA(season_adjust  ~ pdq(1,1,2) + PDQ(1,0,2)), 
-        ARIMA112101 = ARIMA(season_adjust ~ pdq(1,1,2) + PDQ(1,0,1)),
-        ARIMA111102 = ARIMA(season_adjust  ~ pdq(1,1,1) + PDQ(1,0,2)),
-        ARIMA013001 = ARIMA(season_adjust ~ pdq(0,1,3) + PDQ(0,0,1)),
-        auto = ARIMA(season_adjust, stepwise = FALSE, approx = FALSE)
-        )
+```{r non-seasonally adjusted EDA }
+co2.log.nsa.tr %>% gg_tsdisplay(log_value, plot_type = 'partial')
 
-ari.fit2 %>% pivot_longer(everything(), names_to = "Model name", values_to = "Orders")
+co2.log.nsa.tr %>% gg_tsdisplay(difference(log_value), plot_type = 'partial')
 
-glance(ari.fit2) |> arrange(AICc) |> select(.model:AICc)
+co2.log.nsa.tr %>% gg_tsdisplay(difference(difference(log_value),12), plot_type = 'partial')
 
-mul.quad.sea2 <- co2.log.sa.tr %>% 
-  model(trend_model = TSLM(season_adjust ~ trend() + I(trend()^2)))
-mul.quad.sea2 %>% report()
+co2.log.nsa.tr %>% features(log_value, unitroot_ndiffs)
+co2.log.nsa.tr %>% features(log_value, unitroot_nsdiffs)
+co2.log.nsa.tr %>% features(difference(difference(log_value),12), unitroot_kpss)
+```
+The plots above show similar trend and seasonality in the updated dataset compared to the 1997 dataset. After removing the trend and the seasonality components, the third plot suggests a model with one non-seasonal moving average, one non-seasonal autoregressive, one seasonal moving average and one seasonal autoregressive term. The rootunit test also suggested taking a non-seasonal and a seasonal differencing to make updated CO2 timeseries stationary. 
 
-future.df2 <- new_data(co2.log.sa.tr, n = 24)
-lm.fx.te <- mul.quad.sea2 %>% forecast(new_data = future.df2)
-
-
-bind_rows(
-  ari.fit2 %>% select(ARIMA111201) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
-  ari.fit2 %>% select(ARIMA211201) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
-  ari.fit2 %>% select(ARIMA111102) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te), 
-  ari.fit2 %>% select(ARIMA111101) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
-  ari.fit2 %>% select(ARIMA013001) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
-  lm.fx.te %>% fabletools::accuracy(co2.log.sa.te)
-  
-)
-
-
-# Non-seasonally adjusted models 
-
+```{r non-seasonally model development}
 ari.fit3 <- co2.log.nsa.tr %>% 
-  model(ARIMA111101 = ARIMA(log_value ~ pdq(1,1,1) + PDQ(1,1,1)),
+  model(ARIMA011011 = ARIMA(log_value ~ pdq(0,1,1) + PDQ(0,1,1)),
+        ARIMA111101 = ARIMA(log_value ~ pdq(1,1,1) + PDQ(1,1,1)),
         ARIMA111201 = ARIMA(log_value  ~ pdq(1,1,1) + PDQ(2,1,1)),
         ARIMA211201 = ARIMA(log_value  ~ pdq(2,1,1) + PDQ(2,1,1)),
         ARIMA112102 = ARIMA(log_value  ~ pdq(1,1,2) + PDQ(1,1,2)), 
@@ -537,10 +518,136 @@ ari.fit3 %>% pivot_longer(everything(), names_to = "Model name", values_to = "Or
 
 glance(ari.fit3) |> arrange(AICc) |> select(.model:AICc)
 
+mul.quad.sea3 <- co2.log.nsa.tr %>% 
+  model(trend_model = TSLM(log_value ~ trend() + I(trend()^2) + season()))
+mul.quad.sea3 %>% report()
+
+future.df3 <- new_data(co2.log.nsa.tr, n = 24)
+lm.fx.te2 <- mul.quad.sea3 %>% forecast(new_data = future.df3)
+```
+The team explored a variety of model specification to find the best model to fit the updated data. Our best model includes one non-seasonal and one seasonal differencing, one non-seasonal and one seasonal moving average term (lowest AICc score).
+
+
+
+```{r Non-seasonally adjusted model evaluation}
+ari.fit3 %>% select(ARIMA011011) %>% gg_tsresiduals(lag = 36)
+augment(ari.fit3) %>%
+  features(.innov, ljung_box, lag=200, dof=4)
+
+bind_rows(
+  ari.fit3 %>% select(ARIMA011011) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.nsa.te),
+  ari.fit3 %>% select(ARIMA112101) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.nsa.te),
+  ari.fit3 %>% select(ARIMA111101) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.nsa.te), 
+  ari.fit3 %>% select(ARIMA013001) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.nsa.te),
+  ari.fit3 %>% select(ARIMA111201) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.nsa.te),
+  ari.fit3 %>% select(ARIMA111102) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.nsa.te),
+  lm.fx.te2 %>% fabletools::accuracy(co2.log.nsa.te)
+)
 
 ```
+The residual analysis of the best performing model shows that the residuals follow a pattern similar to a white noise signal. The Ljungbox test also shows that the residuals from all developed models do not have auto correlation. 
 
+The out-of-sample evaluation shows that all models have similar MAPE scores (ranging from 0.0178 to 0.0184). The MAPE scores show that all models are performing reasonably close to each other and there is no model that is significantly better than the others. The out-of-sample MAPE score of the updated ARIMA models is lower than the MAPE score of the ARIMA models developed in 1997, suggesting that adding more recent data improves the overall performance of the ARIMA model. Because the test MAPE score did not vary significantly among all models, we kept our model selection the same based on the AICc score.
+
+We also developed a linear model for the non-seasonally adjusted CO2 data, the linear model has a lower MAPE than all of the ARIMA model using the updated CO2 data. 
+
+```{r Seasonally adjusted models EDA}
+co2.log.sa.tr %>% gg_tsdisplay(season_adjust, plot_type = 'partial')
+
+co2.log.sa.tr %>% gg_tsdisplay(difference(season_adjust), plot_type = 'partial')
+
+
+co2.log.sa.tr %>% features(season_adjust, unitroot_ndiffs)
+co2.log.sa.tr %>% features(difference(season_adjust), unitroot_ndiffs)
+
+co2.log.sa.tr %>% features(season_adjust, unitroot_nsdiffs)
+co2.log.sa.tr %>% features(difference(difference(season_adjust)), unitroot_kpss)
+```
+The unit root tests suggest that taking two non-seasonal differencings will result in a stationary timeseries for the seasonally-adjusted CO2 dataset. The plots above suggest a model with one or two non-seasonal differencing, one non-seasonal moving average term, one or two non-seasonal autoregressive terms, one seasonal moving average term and one seasonal autoregressive term. 
+
+
+
+```{r Seasonally-adjusted model development, warning=FALSE}
+ari.fit2 <- co2.log.sa.tr %>% 
+  model(ARIMA111101 = ARIMA(season_adjust ~ pdq(1,1,1) + PDQ(1,0,1)),
+        ARIMA111201 = ARIMA(season_adjust  ~ pdq(1,1,1) + PDQ(2,0,1)),
+        ARIMA211201 = ARIMA(season_adjust  ~ pdq(2,1,1) + PDQ(2,0,1)),
+        ARIMA112102 = ARIMA(season_adjust  ~ pdq(1,1,2) + PDQ(1,0,2)), 
+        ARIMA112101 = ARIMA(season_adjust ~ pdq(1,1,2) + PDQ(1,0,1)),
+        ARIMA111102 = ARIMA(season_adjust  ~ pdq(1,1,1) + PDQ(1,0,2)),
+        ARIMA121201 = ARIMA(season_adjust ~ pdq(1,2,1) + PDQ(2,0,1)),
+        ARIMA122202 = ARIMA(season_adjust ~ pdq(1,2,2) + PDQ(2,0,2)),
+        ARIMA013001 = ARIMA(season_adjust ~ pdq(0,1,3) + PDQ(0,0,1)),
+        ARIMA022200 = ARIMA(season_adjust ~ pdq(0,2,2) + PDQ(2,0,0)),
+        auto = ARIMA(season_adjust, stepwise = FALSE, approx = FALSE)
+        )
+
+ari.fit2 %>% pivot_longer(everything(), names_to = "Model name", values_to = "Orders")
+
+glance(ari.fit2) |> arrange(AICc) |> select(.model:AICc)
+
+mul.quad.sea2 <- co2.log.sa.tr %>% 
+  model(trend_model = TSLM(season_adjust ~ trend() + I(trend()^2)))
+mul.quad.sea2 %>% report()
+
+future.df2 <- new_data(co2.log.sa.tr, n = 24)
+lm.fx.te <- mul.quad.sea2 %>% forecast(new_data = future.df2)
+```
+
+```{r Seasonally-adjusted model evaluation, warning = FALSE}
+ari.fit2 %>% select(ARIMA121201) %>% gg_tsresiduals(lag = 36)
+augment(ari.fit2) %>%
+  features(.innov, ljung_box, lag=200, dof=4)
+
+
+bind_rows(
+  ari.fit2 %>% select(ARIMA121201) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
+  ari.fit2 %>% select(ARIMA111201) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
+  ari.fit2 %>% select(ARIMA211201) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te), 
+  ari.fit2 %>% select(ARIMA111102) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
+  ari.fit2 %>% select(ARIMA111101) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
+  ari.fit2 %>% select(ARIMA022200) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
+  ari.fit2 %>% select(ARIMA013001) %>% forecast(h = 24) %>% fabletools::accuracy(co2.log.sa.te),
+  lm.fx.te %>% fabletools::accuracy(co2.log.sa.te)
+  
+)
+
+```
+The Ljungbox test shows that all ARIMA models that use seasonally-adjusted data had residuals that show some level of serial relationship within the data. This suggests that using seasonally-adjusted data is not as effective as using non-seasonally adjusted data to develop models to fit the CO2 data. 
 
 ## (3 points) Task Part 6b: How bad could it get?
 
 With the non-seasonally adjusted data series, generate predictions for when atmospheric CO2 is expected to be at 420 ppm and 500 ppm levels for the first and final times (consider prediction intervals as well as point estimates in your answer). Generate a prediction for atmospheric CO2 levels in the year 2122. How confident are you that these will be accurate predictions?
+
+
+```{r Non-seasonally model prediction}
+co2.nlog.nsa.tr <- co2.log.nsa.tr %>% mutate(
+  log_value = exp(log_value) 
+)
+ari.fit3 %>% forecast(h = 1213) %>% filter(.model == "ARIMA011011") %>% mutate(
+  log_value = exp(log_value),
+  .mean = exp(.mean)
+) %>%
+  autoplot(co2.nlog.nsa.tr) + labs(x = "Time", y = "CO2 Level in Atmosphere (ppm)", title = "CO2 Level in the Atmosphere Based on ARIMA Model")
+
+fx2122.90hilo.ari <- ari.fit3 %>% forecast(h = 1213) %>% filter(.model == 'ARIMA011011') %>% hilo(90) %>% unpack_hilo("90%") 
+
+fx2122.90hilo.ari <- fx2122.90hilo.ari %>% mutate(
+  .mean = exp(.mean), 
+  `90%_lower` = exp(`90%_lower`),
+  `90%_upper` = exp(`90%_upper`)
+)
+fx2122.1st420.ari <- fx2122.90hilo.ari %>% filter(`90%_upper` >= 420) %>% filter(row_number() == 1) %>% select(index) 
+fx2122.lst420.ari <- fx2122.90hilo.ari %>% filter(`90%_lower` < 421) %>% filter(row_number() == n()) %>% select(index) 
+fx2122.avg420.ari1 <- fx2122.90hilo.ari %>% filter(.mean >= 420) %>% filter(row_number() == 1) %>% select(index) 
+fx2122.avg420.ari2 <- fx2122.90hilo.ari %>% filter(.mean < 421) %>% filter(row_number() == n()) %>% select(index) 
+
+fx2122.1st500.ari <- fx2122.90hilo.ari %>% filter(`90%_upper` >= 500) %>% filter(row_number() == 1) %>% select(index) 
+fx2122.lst500.ari <- fx2122.90hilo.ari %>% filter(`90%_lower` < 501) %>% filter(row_number() == n()) %>% select(index) 
+fx2122.avg500.ari1 <- fx2122.90hilo.ari %>% filter(.mean >= 500) %>% filter(row_number() == 1) %>% select(index) 
+fx2122.avg500.ari2 <- fx2122.90hilo.ari %>% filter(.mean < 501) %>% filter(row_number() == n()) %>% select(index) 
+```
+
+According to the selected model (ARIMA model with one seasonal and non-seasonal difference term, one seasonal and non-seasonal moving average term), the CO2 level is expected to reach 420 ppm first time in `r fx2122.avg420.ari1` and last time in `r fx2122.avg420.ari2`. The 90% CI of the model prediction suggests that we may see the CO2 level reach 420 ppm as early as in `r fx2122.1st420.ari` and may see it again as late as in `r fx2122.lst420.ari`. 
+
+According to the model, the CO2 level is expected to reach 500 ppm. first time in `r fx2122.avg500.ari1` and last time in `r fx2122.avg500.ari2`. The 90% CI of the model prediction suggests that we may see the CO2 level reach 500 ppm as early as in `r fx2122.1st500.ari` and may see it again as late as in `r fx2122.lst500.ari`. 
