@@ -95,7 +95,6 @@ p1a2 <- components(df_mult) %>%
 grid.arrange(p1a1, p1a2, nrow = 1, ncol = 2)
 
 ```
-
 The team performed exploratory data analysis (EDA) to understand the timeseries data of CO2 mole fraction (part per million - ppm) at Mauna Loa. In the above, the left plot shows the trend between the CO2 measurements with time and on the right the logarithm of the CO2 measurements with time. The trend lines were generated using additive (left) and multiplicative (right) decomposition methods. The left plot suggests an approximate constant growth rate, and thus an additive decomposition method may be a sufficient for this problem. However, the data was fit with both methods and used the diagnostic statistics to determine which method is a more appropriate.  
 
 ```{r EDA1_2, echo = FALSE}
@@ -108,20 +107,14 @@ p1a6 <- df_mult %>% components() %>% ACF(remainder) %>% autoplot() + labs(title 
 #grid.arrange(p1a3, p1a4, p1a5, p1a6, nrow = 2, ncol = 2) 
 grid.arrange(p1a3, p1a4, nrow = 1, ncol = 2) 
 ```
-
-
 The second plot above shows the actual decomposition using the additive method, the autocorrelation (ACF) plot of the residuals. The linear trend portion suggests that from 1959 to 1997, the CO2 level increases about 40 ppms, the seasonality portion suggests that the CO2 mole fraction varies by 2 ppm depending on season. The ACF plots show that although the residuals seem to be stationary, they do not follow a white noise signal (there are significant lags within the plot), suggesting a linear time and seasonal model may not be sufficient to fit the data. The plots of the multiplicative method show the the same results, therefore they are omitted. 
 
 As noted above the seasonal component appears to have a mode and antimode of -2 ppm to 2 ppm, with a slight increase in amplitude over time. This increase is an interesting finding that we will explore next.  
 
-
 ```{r EDA1_3, echo = FALSE}
 df_add %>% components() %>% gg_subseries(season_year) + labs(x = "Month of Year" , y = "Seasonal CO2 Changes", title = "Seasonal Component of the CO2 measurements at Mauna Loa") 
 ```
-
 A seasonal subseries plot (above) facets the time series by each season in the seasonal period. This function is particularly useful in identifying changes in the seasonal pattern over time. From the plot above we can see that from 1960 to 1990 the mode and antimode have increased over the years, this is particulary visible in the month of May, August, September and October. We will explore if this increase in amplitude affects the overall growth trend. 
-
-
 
 ```{r EDA2_2, echo = FALSE}
 #insert slopes for each decade
@@ -136,23 +129,17 @@ model60 <-lm(df60$value ~ df60$index)
 model70 <-lm(df70$value ~ df70$index)
 model80 <-lm(df80$value ~ df80$index)
 
-
-
 #generate plot points for 60, 70, etc...
 newdata <- data.frame(time = seq(min(df60$index), max(df80$index), length.out = 119))
 newdata$decade60 <- predict(model60, newdata)
 newdata$decade70 <- predict(model70, newdata)
 newdata$decade80 <- predict(model80, newdata)
 
-
-
-
 slope_g <- ggplot(newdata, aes(time)) + 
   geom_line(aes(y = decade60, color = "slope line m1960")) +
   geom_line(aes(y = decade70, color = "slope line m1970")) +
   geom_line(aes(y = decade80, color = "slope line m1980")) +
   labs(color = "decade")
-
 
 decade <- c(1960, 1970,1980)
 slope <- c(round(coef(model60)["df60$index"]*1000,2),
@@ -170,10 +157,7 @@ slope_scatter<-ggplot(df_coef, aes(x = decade, y = slope)) +
 
 grid.arrange(slope_g , slope_scatter, nrow = 1, ncol = 2) 
 ```
-
 The plot on the left is each decade fitted to a linear model. We have complete decades from 1960 up to the decade of 1980. From the plot we can see that the slope is increasing. On the right is the scatter plot of the slope for each decade. The rate of growth increased from an average of 2.2 PPM to 4.4 PPM over three decades. We expect an exponential model to better fit the data. The CO2 trend not only includes a seasonal component with an increasing amplitude but also an increasing slope over time. It would be satisfying to find out if those two components are correlated. That is beyond the scope of this analysis.
-
-
 
 ```{r EDA2, echo = FALSE}
 
@@ -188,7 +172,6 @@ df %>% gg_tsdisplay(log(value), plot_type = 'partial')
 
 
 ```
-
 The first plot shows the ACF and PACF plots of the raw data after its log transformation. The ACF portion of this plot shows a strong trend. The PACF plot shows seasonality every 12th lag, and some cyclical components.
 
 ```{r EDA2_1, warning= FALSE, echo = FALSE}
@@ -389,28 +372,19 @@ For the ARIMA model, the CO2 level is expected to reach 420 ppm the first time i
 
 In 2100, based on the linear model, the CO2 level at Mauno Loa is expected to reach `r fx2100.lm` ppm for the linear model and `r fx2100.ari` ppm for the ARIMA model. The ARIMA model suggests a slower growth of CO2 level and also has a wider 90% CI, than the predictions from the linear model. 
 
-
 Athough it is unlikely both models would provide accurate CO2 levels in 2100 (given they do not account for changing external trends), one model can be closer in its prediction than the other model. ARIMA models are stochastic models and by their essence are generally inadequate for long-term forecasting, such as more than a few months ahead. This fact is reflected by its growing band of confidence interval with time. The LTTM is a deterministic model that depends heavily on an underlying process and if the process generating the data changes, the model will continue to forecast based on the original process. If the underlying reason for CO2 emissions is deterministic, then our team does not reasonably expect the trend to change drastically and thus we would have more confidence in the LTTM prediction. We can only determine which model is better, and also, if the CO2 emissions trend is a stochastic or deterministic, by measuring their forecasting. The statical diagnostics in our analysis lean towards favoring the ARIMA model and hence a stochastic trend.  
 
-
 # Report from the Point of View of the Present 
+## Introduction 
 
-One of the very interesting features of Keeling and colleagues' research is that they were able to evaluate, and re-evaluate the data as new series of measurements were released. This permitted the evaluation of previous models' performance and a much more difficult question: If their models' predictions were "off" was this the result of a failure of the model, or a change in the system? 
+Having journeyed through the historical perspective presented in our 1997 report, we now stand at the present, armed with updated data and refined tools. However, the severity of CO2 levels in the near future is not known with certainty due to the uncertainty that accompanies long-term forecasts, especially those extending to the year 2100. In the following sections, the team decided to reevaluate the CO2 forecast provided in 1997 and update our forecast conducted in 1997 with more recent data. 
+In the process of this work, we also aim to identify any systematic changes in the way CO2 level grows at Mauna Loa. 
 
-## (1 point) Task 0b: Introduction 
+## Modern data Exploration
 
-In this introduction, you can assume that your reader will have **just** read your 1997 report. In this introduction, **very** briefly pose the question that you are evaluating, and describe what (if anything) has changed in the data generating process between 1997 and the present. 
+With the backdrop of our historical analysis, we turn our attention to the contemporary state of CO2 levels at Mauna Loa. Employing a methodology similar to our 1997 study, our team conducted EDA of the most recent data. This process involved meticulous steps to ensure the integrity of the data, starting with the removal of faulty values—negative readings and suspicious outliers. 
 
-The 1997 CO2 forecast provided CO2 level forecast to 2100. Reasonably, the further the forecast horizon is, the more uncertain the forecast becomes. In the following sections, the team decided to evaluate and update our forecast conducted in 1997 with more recent data. In the process of this work, we also attempted to identify any systematic changes in the way CO2 level grows at Mauna Loa. 
-
-## (3 points) Task 1b: Create a modern data pipeline for Mona Loa CO2 data.
-
-The most current data is provided by the United States' National Oceanic and Atmospheric Administration, on a data page [[here](https://gml.noaa.gov/ccgg/trends/data.html)]. Gather the most recent weekly data from this page. (A group that is interested in even more data management might choose to work with the [hourly data](https://gml.noaa.gov/aftp/data/trace_gases/co2/in-situ/surface/mlo/co2_mlo_surface-insitu_1_ccgg_HourlyData.txt).) 
-
-Create a data pipeline that starts by reading from the appropriate URL, and ends by saving an object called `co2_present` that is a suitable time series object. 
-
-Conduct the same EDA on this data. Describe how the Keeling Curve evolved from 1997 to the present, noting where the series seems to be following similar trends to the series that you "evaluated in 1997" and where the series seems to be following different trends. This EDA can use the same, or very similar tools and views as you provided in your 1997 report. 
-
+### Unraveling Weekly CO2 Trends
 ```{r present data pipeline and processing, echo = FALSE}
 url <- "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_weekly_mlo.csv" 
 co2_present <- read_csv(url, skip = 35)
@@ -443,8 +417,9 @@ p1b2 <- components(co2_present.mult) %>%
 
 grid.arrange(p1b1, p1b2, nrow = 1, ncol = 2)
 ```
-The team conducted the evaluation using a similar approach that we did for the 1997 CO2 dataset. We performed explanatory data analysis on the updated CO2 dataset. Different from the 1997 study, we worked with the weekly CO2 data in the current study. We processed to remove faulty values within the dataset (negative values or suspicious outliers). The plot above presents the weekly CO2 level at Mauna Loa from May 1974 to October 2023. The graph on the left presents the CO2 level and the graph on the right presents the logarithmic version of the CO2 level. The plot shows a more obvious non-linear trend than the 1997 study, which indicates that the multiplicative decomposition method is a more appropriate method. 
+The plot above portrays the weekly CO2 levels at Mauna Loa from May 1974 to October 2023. The left graph displays the raw CO2 levels, while the right graph showcases the logarithmic transformation. Notably, the present-day plot reveals a more pronounced non-linear trend compared to the 1997 study, indicating that the multiplicative decomposition method is better suited to capture the intricacies of the current data.
 
+### Decomposition and Residual Analysis
 ```{r EDA present, echo = FALSE}
 p1b3 <- co2_present.add %>% components() %>% autoplot() 
 p1b4 <- co2_present.add %>% components() %>% ACF(remainder) %>% autoplot() + labs(titles = "Residuals of additive composition") 
@@ -452,22 +427,21 @@ p1b5 <- co2_present.mult %>% components() %>% autoplot()
 p1b6 <- co2_present.mult %>% components() %>% ACF(remainder) %>% autoplot() + labs(titles = "Residuals of multiplicative composition")
 
 grid.arrange(p1b3, p1b4, p1b5, p1b6, nrow = 2, ncol = 2) 
-
 ```
-The above plot shows the actual decomposition using the additive and multiplicative method along with the ACF plots of the residuals (after the trend and the seasonal component were removed from the series). The ACF plots show that, at the weekly granularity, the residuals timeseries does not seem to be stationary, suggesting that further differencing transformation may be needed. 
+The above plot shows the actual decomposition using the additive and multiplicative method along with the ACF plots of the residuals (after the trend and the seasonal component were removed from the series). The ACF plots show that, at the weekly granularity, the residuals timeseries does not have stationary characteristics, suggesting that further differencing transformation may be needed. 
 
+### Iterative Differencing
 ```{r co2 present transformation, echo  = FALSE, warning = FALSE} 
 co2_present %>% gg_tsdisplay(log(value), plot_type = 'partial',lag = 104)
 co2_present %>% gg_tsdisplay(difference(log(value)), plot_type = 'partial',lag = 104)
 co2_present %>% gg_tsdisplay(difference(difference(log(value)), 52), plot_type = 'partial',lag = 104)
 ```
-The team performed a series of differencing transformation on the updated dataset. Similarly to the analysis included in the 1997 study, we generated a CO2 timeseries with the differencing at the subsequent lag and every 52 lags to remove the trend and the seasonality component from the data. The above plots show the timeseries with differencing transformation and their associated ACF and PACF plots. The third plot, which shows the timeseries after the trend and seasonal differencing, indicates that there is no trend or seasonality within the series and suggests an ARIMA model with both seasonal and non-seasonal moving average and autoregressive terms may be a good candidate to model the updated dataset. 
+Continuing our analysis, the team then performed a series of differencing transformation on the updated dataset. Similarly to the analysis included in the 1997 study, we generated a CO2 timeseries with the differencing at the subsequent lag and every 52 lags to remove the trend and the seasonality component from the data. 
 
+### Identifying Modeling Candidates
+The above plots show the timeseries with differencing transformation and their associated ACF and PACF plots. The third plot, which shows the timeseries after the trend and seasonal differencing, indicates that there is no trend or seasonality within the series and suggests an ARIMA model with both seasonal and non-seasonal moving average and autoregressive terms may be a good candidate to model the updated dataset. 
 
-## (1 point) Task 2b: Compare linear model forecasts against realized CO2
-
-Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from a linear time model in 1997 (i.e. "Task 2a"). (You do not need to run any formal tests for this task.) 
-
+## Linear model forecast assessment
 ```{r linear model 1997 vs observed, echo = FALSE, warning= FALSE}
 co2_present.m1 <- co2_present %>% as_tibble() %>%
   mutate(
@@ -482,11 +456,9 @@ co2_present.m1 <- co2_present %>% as_tibble() %>%
 fx2020 %>% filter((as.Date(index) > as.Date("2000-01-01")) & (as.Date(index) < as.Date("2020-12-31"))) %>% autoplot(co2_present.m1) + 
   labs(x = "Time", y = "CO2 Level at Mauna Loa", title = "Comparison between 1997 Forecast (Linear Model) with Observed Values") 
 ```
-To compare the forecast from our 1997 linear model to the observed CO2 level, we aggregated the weekly actual CO2 data to monthly data so that the dataset has the same time index as the forecast values. Based on the comparison in the above plot (black line shows the observed CO2 level and blue line shows the forecast CO2 level), the 1997 linear model overforecast the CO2 level at Mauna Loa from 2000 to 2020. 
+To gauge the efficacy of our 1997 linear model in predicting present-day CO2 levelsthe forecast, we aggregated the weekly actual CO2 data to monthly data so that the dataset has the same time index as the forecast values. Based on the comparison in the above plot (where the black line shows the observed CO2 level and blue line shows the forecast CO2 level), the 1997 linear model overforecast the CO2 level at Mauna Loa from 2000 to 2020. 
 
-
-## (1 point) Task 3b: Compare ARIMA models forecasts against realized CO2  
-
+##    
 ```{r ARIMA model 1997 vs observed, echo = FALSE, warning= FALSE}
 co2_present.m2 <- co2_present %>% as_tibble() %>%
   mutate(
@@ -501,45 +473,16 @@ ari.fit %>% forecast(h = 300) %>% filter(.model == 'ARIMA013011') %>% autoplot(c
     labs(x = "Time", y = "CO2 Level at Mauna Loa", title = "Comparison between 1997 Forecast (ARIMA Model) with Observed Values") 
 
 ```
-The plot above shows the comparison between observed CO2 level and the forecast from the 1997 ARIMA model. The observed CO2 levels are closer to the upper bound of the 95% CI of the forecast. The forecast from 1997 ARIMA model shows that the expected forecast is lower than the observed CO2 values at a more significant degree than that of the linear model. However, the observed CO2 seems to be closer to the upper bound of the 95% CI of the ARIMA model. 
+The plot above depicts the comparison between the forecast from the 1997 ARIMA model and observed CO2 level. Intrestingly, the actual CO2 levels are closer to the upper bound of the 95% CI of the 1997 ARIMA forecast. The forecast from 1997 ARIMA model shows that the expected forecast is lower than the observed CO2 values at a more significant degree than that of the linear model. However, the observed CO2 still appears to be closer to the upper bound of the 95% CI of the ARIMA model. 
 
-Descriptively compare realized atmospheric CO2 levels to those predicted by your forecast from the ARIMA model that you fitted in 1997 (i.e. "Task 3a"). Describe how the Keeling Curve evolved from 1997 to the present. 
-
-## (3 points) Task 4b: Evaluate the performance of 1997 linear and ARIMA models 
-
-In 1997 you made predictions about the first time that CO2 would cross 420 ppm. How close were your models to the truth? 
-
-After reflecting on your performance on this threshold-prediction task, continue to use the weekly data to generate a month-average series from 1997 to the present, and compare the overall forecasting performance of your models from Parts 2a and 3b over the entire period. (You should conduct formal tests for this task.) 
+## Performance of 1997 linear and ARIMA models 
 
 ```{r Performance evaluation - reach 420ppm, echo = FALSE, warning= FALSE} 
 obs1st420 <- co2_present %>% filter(value >= 420) %>% filter(row_number() ==1) %>% select(time_index) 
 ```
-The observed CO2 values indicate that the CO2 level reached 420 ppm the first time in `r obs1st420`. This is earlier than the prediction from the linear model and later than the prediction from the ARIMA model. The linear model (with a tight CI band) predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.lm` and the ARIMA model predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.ari`. Based on their prediction, the ARIMA model provided a better expectation than the linear model. 
+The observed CO2 values indicate that the CO2 level reached 420 ppm the first time in `r obs1st420`. This is earlier than the prediction from the linear model and later than the prediction from the ARIMA model. The linear model (with a tight CI band) predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.lm`, while the ARIMA model predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.ari`. Based on their prediction, the ARIMA model provided a more accurate expectation than the linear model. 
 
-```{r model evaluation, echo = FALSE, warning = FALSE}
-co2_present.m3 <- co2_present %>% as_tibble() %>%
-  mutate(
-  index = yearmonth(time_index) 
-) %>% group_by(index) %>% summarise(
- value = mean(value),
- log_value = mean(exp(log_value))
-) %>% as_tsibble(index = index) 
-
-bind_rows(
-  ari.fit %>% select(ARIMA013011) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3),
-  ari.fit %>% select(ARIMA211211) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3),
-  ari.fit %>% select(ARIMA111211) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3), 
-  ari.fit %>% select(ARIMA111111) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3),
-  ari.fit %>% select(ARIMA112111) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3),
-  fx2020 %>% fabletools::accuracy(co2_present.m3)
-)
-```
-The team calculated the performance metrics in order to evaluate the performance of the models that we developed in 1997. The performance metrics include but are not limited to root mean square error , mean absolute error and mean absolute percentage error. Based on the results of the metrics table, the linear model with trend (linear and quadratic terms) and seasonal terms was the best model with the lowest score in all metrics. 
-
-## (4 points) Task 5b: Train best models on present data
-
-Seasonally adjust the weekly NOAA data, and split both seasonally-adjusted (SA) and non-seasonally-adjusted (NSA) series into training and test sets, using the last two years of observations as the test sets. For both SA and NSA series, fit ARIMA models using all appropriate steps. Measure and discuss how your models perform in-sample and (psuedo-) out-of-sample, comparing candidate models and explaining your choice. In addition, fit a polynomial time-trend model to the seasonally-adjusted series and compare its performance to that of your ARIMA model.
-
+## Train best models on present data
 ```{r generate training and testing data, echo = FALSE, warning = FALSE}
 co2_present.m4 <- co2_present %>% as_tibble() %>%
   mutate(
@@ -589,7 +532,6 @@ bind_rows(
   
 )
 
-
 # Non-seasonally adjusted models 
 
 ari.fit3 <- co2.log.nsa.tr %>% 
@@ -609,8 +551,32 @@ glance(ari.fit3) |> arrange(AICc) |> select(.model:AICc)
 
 
 ```
+The Ljungbox test shows that all ARIMA models that use seasonally-adjusted data had residuals that show some level of serial relationship within the data. This suggests that using seasonally-adjusted data is not as effective as using non-seasonally adjusted data to develop models to fit the CO2 data. 
 
+## Future Predictions
 
-## (3 points) Task Part 6b: How bad could it get?
+According to the selected model (ARIMA model with one seasonal and non-seasonal difference term, one seasonal and non-seasonal moving average term), the CO2 level is expected to reach 420 ppm first time in `r fx2122.avg420.ari1` and last time in `r fx2122.avg420.ari2`. The 90% CI of the model prediction suggests that we may see the CO2 level reach 420 ppm as early as in `r fx2122.1st420.ari` and may see it again as late as in `r fx2122.lst420.ari`. 
 
-With the non-seasonally adjusted data series, generate predictions for when atmospheric CO2 is expected to be at 420 ppm and 500 ppm levels for the first and final times (consider prediction intervals as well as point estimates in your answer). Generate a prediction for atmospheric CO2 levels in the year 2122. How confident are you that these will be accurate predictions?
+According to the model, the CO2 level is expected to reach 500 ppm. first time in `r fx2122.avg500.ari1` and last time in `r fx2122.avg500.ari2`. The 90% CI of the model prediction suggests that we may see the CO2 level reach 500 ppm as early as in `r fx2122.1st500.ari` and may see it again as late as in `r fx2122.lst500.ari`. 
+
+## Appendix
+### Model Performance Metrics
+```{r model evaluation, echo = FALSE, warning = FALSE}
+co2_present.m3 <- co2_present %>% as_tibble() %>%
+  mutate(
+  index = yearmonth(time_index) 
+) %>% group_by(index) %>% summarise(
+ value = mean(value),
+ log_value = mean(exp(log_value))
+) %>% as_tsibble(index = index) 
+
+bind_rows(
+  ari.fit %>% select(ARIMA013011) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3),
+  ari.fit %>% select(ARIMA211211) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3),
+  ari.fit %>% select(ARIMA111211) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3), 
+  ari.fit %>% select(ARIMA111111) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3),
+  ari.fit %>% select(ARIMA112111) %>% forecast(h = 300) %>% fabletools::accuracy(co2_present.m3),
+  fx2020 %>% fabletools::accuracy(co2_present.m3)
+)
+```
+The team calculated the performance metrics in order to evaluate the performance of the models that we developed in 1997. The performance metrics include but are not limited to root mean square error, mean absolute error and mean absolute percentage error. Based on the results of the metrics table, the linear model with trend (linear and quadratic terms) and seasonal terms was the best model with the lowest score in all metrics. 
