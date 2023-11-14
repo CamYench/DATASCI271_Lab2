@@ -431,11 +431,6 @@ grid.arrange(p1b3, p1b4, p1b5, p1b6, nrow = 2, ncol = 2)
 The above plot shows the actual decomposition using the additive and multiplicative method along with the ACF plots of the residuals (after the trend and the seasonal component were removed from the series). The ACF plots show that, at the weekly granularity, the residuals timeseries does not have stationary characteristics, suggesting that further differencing transformation may be needed. 
 
 ### Iterative Differencing
-```{r co2 present transformation, echo  = FALSE, warning = FALSE} 
-co2_present %>% gg_tsdisplay(log(value), plot_type = 'partial',lag = 104)
-co2_present %>% gg_tsdisplay(difference(log(value)), plot_type = 'partial',lag = 104)
-co2_present %>% gg_tsdisplay(difference(difference(log(value)), 52), plot_type = 'partial',lag = 104)
-```
 Continuing our analysis, the team then performed a series of differencing transformation on the updated dataset. Similarly to the analysis included in the 1997 study, we generated a CO2 timeseries with the differencing at the subsequent lag and every 52 lags to remove the trend and the seasonality component from the data. 
 
 ### Identifying Modeling Candidates
@@ -458,7 +453,7 @@ fx2020 %>% filter((as.Date(index) > as.Date("2000-01-01")) & (as.Date(index) < a
 ```
 To gauge the efficacy of our 1997 linear model in predicting present-day CO2 levelsthe forecast, we aggregated the weekly actual CO2 data to monthly data so that the dataset has the same time index as the forecast values. Based on the comparison in the above plot (where the black line shows the observed CO2 level and blue line shows the forecast CO2 level), the 1997 linear model overforecast the CO2 level at Mauna Loa from 2000 to 2020. 
 
-##    
+## ARIMA model forecast assessment
 ```{r ARIMA model 1997 vs observed, echo = FALSE, warning= FALSE}
 co2_present.m2 <- co2_present %>% as_tibble() %>%
   mutate(
@@ -471,7 +466,6 @@ co2_present.m2 <- co2_present %>% as_tibble() %>%
 
 ari.fit %>% forecast(h = 300) %>% filter(.model == 'ARIMA013011') %>% autoplot(co2_present.m2) + 
     labs(x = "Time", y = "CO2 Level at Mauna Loa", title = "Comparison between 1997 Forecast (ARIMA Model) with Observed Values") 
-
 ```
 The plot above depicts the comparison between the forecast from the 1997 ARIMA model and observed CO2 level. Intrestingly, the actual CO2 levels are closer to the upper bound of the 95% CI of the 1997 ARIMA forecast. The forecast from 1997 ARIMA model shows that the expected forecast is lower than the observed CO2 values at a more significant degree than that of the linear model. However, the observed CO2 still appears to be closer to the upper bound of the 95% CI of the ARIMA model. 
 
@@ -480,9 +474,10 @@ The plot above depicts the comparison between the forecast from the 1997 ARIMA m
 ```{r Performance evaluation - reach 420ppm, echo = FALSE, warning= FALSE} 
 obs1st420 <- co2_present %>% filter(value >= 420) %>% filter(row_number() ==1) %>% select(time_index) 
 ```
-The observed CO2 values indicate that the CO2 level reached 420 ppm the first time in `r obs1st420`. This is earlier than the prediction from the linear model and later than the prediction from the ARIMA model. The linear model (with a tight CI band) predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.lm`, while the ARIMA model predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.ari`. Based on their prediction, the ARIMA model provided a more accurate expectation than the linear model. 
+The observed CO2 values indicate that the CO2 level reached 420 ppm the first time in `r obs1st420`. This is earlier than the prediction from the linear model and later than the prediction from the ARIMA model. The linear model (with a tight CI band) predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.lm`, while the ARIMA model predicted that the CO2 level would reach 420 ppm as early as in `r fx2100.1st420.ari`. Based on their prediction, the ARIMA model provided a more accurate expectation than the linear model. Please refer to the appendix for an elaboration on the metrics used to assess the models. 
 
-## Train best models on present data
+## Improved Model using New Data
+Using the addition of new data and the insights we gained from evaluating 1997 modes, we can retrain the ARIMA model for enhanced accuracy.
 ```{r generate training and testing data, echo = FALSE, warning = FALSE}
 co2_present.m4 <- co2_present %>% as_tibble() %>%
   mutate(
@@ -559,7 +554,22 @@ According to the selected model (ARIMA model with one seasonal and non-seasonal 
 
 According to the model, the CO2 level is expected to reach 500 ppm. first time in `r fx2122.avg500.ari1` and last time in `r fx2122.avg500.ari2`. The 90% CI of the model prediction suggests that we may see the CO2 level reach 500 ppm as early as in `r fx2122.1st500.ari` and may see it again as late as in `r fx2122.lst500.ari`. 
 
+## Conclusion
+Our journey from 1997's historical insights to the contemporary CO2 dynamics at Mauna Loa uncovered both continuities and shifts in atmospheric CO2. Armed with updated data, we aimed to reassess prior forecasts and discern any systematic changes in CO2 growth patterns.
+
+Our prior, 1997 models demonstrated divergence from modern conditions, revealing overforecasting from 2000 to 2020. In the realm of ARIMA models, we observed CO2 levels were near the upper bounds of the 95% confidence interval, hinting at an increase in the underlying contributor sources to atmospheric CO2. The ARIMA forecast consistently projected lower values yet, maintained a proximity to its upper confidence interval.
+
+With insights from 1997 models and new data, our gaze extends to the future. The interplay of forecasts suggests that the ARIMA model, with the addition of seasonal and non-seasonal terms, offers a more accurate prediction of atmospheric CO2. The Ljungbox test underscores the model's efficacy with non-seasonally adjusted data. Looking ahead, our selected ARIMA model predicts a first encounter with a concentration of 420 ppm as early as `r fx2122.avg420.ari1` and a lingering farewell as late as `r fx2122.avg420.ari2`. The anticipation of reaching 500 ppm, a milestone with extreme environmental implications, is also predicted for the future. Here, we acknowledge the inherent uncertainty accompanying long-term projections and hope that un-incorporated factors, such as the adoption of new technologies and carbon mitigation techniques will render our forecasts as worst-case over-predictions. 
+
 ## Appendix
+
+### Iterative Differencing Plots
+```{r co2 present transformation, echo  = FALSE, warning = FALSE} 
+co2_present %>% gg_tsdisplay(log(value), plot_type = 'partial',lag = 104)
+co2_present %>% gg_tsdisplay(difference(log(value)), plot_type = 'partial',lag = 104)
+co2_present %>% gg_tsdisplay(difference(difference(log(value)), 52), plot_type = 'partial',lag = 104)
+```
+
 ### Model Performance Metrics
 ```{r model evaluation, echo = FALSE, warning = FALSE}
 co2_present.m3 <- co2_present %>% as_tibble() %>%
@@ -580,3 +590,5 @@ bind_rows(
 )
 ```
 The team calculated the performance metrics in order to evaluate the performance of the models that we developed in 1997. The performance metrics include but are not limited to root mean square error, mean absolute error and mean absolute percentage error. Based on the results of the metrics table, the linear model with trend (linear and quadratic terms) and seasonal terms was the best model with the lowest score in all metrics. 
+
+
